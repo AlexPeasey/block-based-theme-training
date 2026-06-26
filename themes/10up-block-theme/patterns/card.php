@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Title: Base Card
  * Slug: tenup-theme/base-card
