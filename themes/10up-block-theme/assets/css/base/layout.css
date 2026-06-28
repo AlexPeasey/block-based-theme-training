@@ -1,5 +1,10 @@
 html {
+	accent-color: var(--wp--preset--color--yellow-primary);
 	scroll-behavior: smooth;
+
+	@view-transition { /* stylelint-disable-line at-rule-no-unknown */
+		navigation: auto; /* stylelint-disable-line property-no-unknown */
+	}
 }
 
 .has-global-padding :where(.has-global-padding.is-layout-constrained) {
