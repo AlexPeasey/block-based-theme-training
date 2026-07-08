@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Gutenberg Blocks setup
  *
@@ -16,7 +17,8 @@ use TenupFramework\ModuleInterface;
  *
  * @package TenupBlockTheme
  */
-class Blocks implements ModuleInterface {
+class Blocks implements ModuleInterface
+{
 
 	use Module;
 	use GetAssetInfo;
@@ -26,7 +28,8 @@ class Blocks implements ModuleInterface {
 	 *
 	 * @return bool
 	 */
-	public function can_register() {
+	public function can_register()
+	{
 		return true;
 	}
 
@@ -35,16 +38,21 @@ class Blocks implements ModuleInterface {
 	 *
 	 * @return void
 	 */
-	public function register() {
+	public function register()
+	{
 		$this->setup_asset_vars(
 			dist_path: TENUP_BLOCK_THEME_DIST_PATH,
 			fallback_version: TENUP_BLOCK_THEME_VERSION
 		);
-		add_action( 'init', [ $this, 'register_theme_blocks' ], 10, 0 );
-		add_action( 'init', [ $this, 'enqueue_theme_block_styles' ], 10, 0 );
+		add_action('init', [$this, 'register_theme_blocks'], 10, 0);
+		add_action('init', [$this, 'enqueue_theme_block_styles'], 10, 0);
+
+		add_filter('render_block_core/post-featured-image', [$this, 'filter_featured_image_block'], 10, 3);
+		add_filter('render_block_core/button', [$this, 'neutralize_empty_button_link'], 10, 1);
+		add_filter('render_block', [$this, 'maybe_add_flex_shrink'], 10, 3);
 
 		// Prevents third-party blocks from being suggested in the block inserter.
-		remove_action( 'enqueue_block_editor_assets', 'wp_enqueue_editor_block_directory_assets' );
+		remove_action('enqueue_block_editor_assets', 'wp_enqueue_editor_block_directory_assets');
 	}
 
 
@@ -53,21 +61,22 @@ class Blocks implements ModuleInterface {
 	 *
 	 * @return void
 	 */
-	public function register_theme_blocks() {
+	public function register_theme_blocks()
+	{
 		// Register all the blocks in the theme.
-		if ( file_exists( TENUP_BLOCK_THEME_BLOCK_DIST_DIR ) ) {
-			$block_json_files = glob( TENUP_BLOCK_THEME_BLOCK_DIST_DIR . '*/block.json' );
+		if (file_exists(TENUP_BLOCK_THEME_BLOCK_DIST_DIR)) {
+			$block_json_files = glob(TENUP_BLOCK_THEME_BLOCK_DIST_DIR . '*/block.json');
 			$block_names      = [];
 
-			if ( empty( $block_json_files ) ) {
+			if (empty($block_json_files)) {
 				return;
 			}
 
-			foreach ( $block_json_files as $filename ) {
-				$block_folder = dirname( $filename );
-				$block        = register_block_type_from_metadata( $block_folder );
+			foreach ($block_json_files as $filename) {
+				$block_folder = dirname($filename);
+				$block        = register_block_type_from_metadata($block_folder);
 
-				if ( ! $block ) {
+				if (! $block) {
 					continue;
 				}
 
@@ -76,11 +85,11 @@ class Blocks implements ModuleInterface {
 
 			add_filter(
 				'allowed_block_types_all',
-				function ( array|bool $allowed_blocks ) use ( $block_names ): array|bool {
-					if ( ! is_array( $allowed_blocks ) ) {
+				function (array|bool $allowed_blocks) use ($block_names): array|bool {
+					if (! is_array($allowed_blocks)) {
 						return $allowed_blocks;
 					}
-					return array_merge( $allowed_blocks, $block_names );
+					return array_merge($allowed_blocks, $block_names);
 				}
 			);
 		}
@@ -91,22 +100,23 @@ class Blocks implements ModuleInterface {
 	 *
 	 * @return void
 	 */
-	public function enqueue_theme_block_styles() {
-		$stylesheets = glob( TENUP_BLOCK_THEME_DIST_PATH . '/blocks/autoenqueue/**/*.css' );
+	public function enqueue_theme_block_styles()
+	{
+		$stylesheets = glob(TENUP_BLOCK_THEME_DIST_PATH . '/blocks/autoenqueue/**/*.css');
 
-		if ( empty( $stylesheets ) ) {
+		if (empty($stylesheets)) {
 			return;
 		}
 
-		foreach ( $stylesheets as $stylesheet_path ) {
-			$block_type = str_replace( TENUP_BLOCK_THEME_DIST_PATH . '/blocks/autoenqueue/', '', $stylesheet_path );
-			$block_type = str_replace( '.css', '', $block_type );
+		foreach ($stylesheets as $stylesheet_path) {
+			$block_type = str_replace(TENUP_BLOCK_THEME_DIST_PATH . '/blocks/autoenqueue/', '', $stylesheet_path);
+			$block_type = str_replace('.css', '', $block_type);
 
 			wp_register_style(
 				"tenup-theme-{$block_type}",
 				TENUP_BLOCK_THEME_DIST_URL . 'blocks/autoenqueue/' . $block_type . '.css',
-				$this->get_asset_info( 'blocks/autoenqueue/' . $block_type, 'dependencies' ),
-				$this->get_asset_info( 'blocks/autoenqueue/' . $block_type, 'version' ),
+				$this->get_asset_info('blocks/autoenqueue/' . $block_type, 'dependencies'),
+				$this->get_asset_info('blocks/autoenqueue/' . $block_type, 'version'),
 			);
 
 			wp_enqueue_block_style(
@@ -117,15 +127,82 @@ class Blocks implements ModuleInterface {
 				]
 			);
 
-			if ( file_exists( TENUP_BLOCK_THEME_DIST_PATH . 'blocks/autoenqueue/' . $block_type . '.js' ) ) {
+			if (file_exists(TENUP_BLOCK_THEME_DIST_PATH . 'blocks/autoenqueue/' . $block_type . '.js')) {
 				wp_enqueue_script(
 					$block_type,
 					TENUP_BLOCK_THEME_DIST_URL . 'blocks/autoenqueue/' . $block_type . '.js',
-					$this->get_asset_info( 'blocks/autoenqueue/' . $block_type, 'dependencies' ),
-					$this->get_asset_info( 'blocks/autoenqueue/' . $block_type, 'version' ),
+					$this->get_asset_info('blocks/autoenqueue/' . $block_type, 'dependencies'),
+					$this->get_asset_info('blocks/autoenqueue/' . $block_type, 'version'),
 					true
 				);
 			}
 		}
+	}
+
+	public function filter_featured_image_block($block_content, $block, $instance)
+	{
+
+		if (empty($instance->context['postId'])) {
+			return $block_content;
+		}
+
+		$featured_image_id = get_post_thumbnail_id($instance->context['postId']);
+
+		$p = new \WP_HTML_Tag_Processor($block_content);
+
+		if (! $p->next_tag()) {
+			return $block_content;
+		}
+
+		if ($p->has_class('is-style-single-movie-backdrop')) {
+			return $block_content;
+		}
+
+		$style_attribute = $p->get_attribute('style');
+		$view_transition_style = "view-transition-name: post-featured-image-id-{$featured_image_id};";
+
+		if (false === strpos($style_attribute, $view_transition_style)) {
+			$style_attribute = $view_transition_style . $style_attribute;
+		}
+
+		$p->set_attribute('style', $style_attribute);
+
+		return $p->get_updated_html();
+	}
+
+	public function maybe_add_flex_shrink($block_content, $block, $instance)
+	{
+
+		if (isset($block['attrs']['style']['layout']['selfStretch']) && 'fixed' === $block['attrs']['style']['layout']['selfStretch']) {
+			$tags = new \WP_HTML_Tag_Processor($block_content);
+
+			if (! $tags->next_tag()) {
+				return $block_content;
+			}
+
+			$tags->add_class('flex-shrink-0');
+			$block_content = $tags->get_updated_html();
+		}
+
+		return $block_content;
+	}
+
+	public function neutralize_empty_button_link($block_content)
+	{
+
+		if (! str_contains($block_content, '<a')) {
+			return $block_content;
+		}
+
+		return preg_replace_callback(
+			'#<a\b([^>]*)>(.*?)</a>#is',
+			function ($matches) {
+				if (preg_match('/\bhref\s*=/i', $matches[1])) {
+					return $matches[0];
+				}
+				return '<span' . $matches[1] . '>' . $matches[2] . '</span>';
+			},
+			$block_content
+		);
 	}
 }
